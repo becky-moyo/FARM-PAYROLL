@@ -1,0 +1,51 @@
+<!-- app/templates/salary_slips/select.html -->
+{% extends "base.html" %}
+
+{% block title %}Generate Salary Slip - Farm Payroll{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Generate Salary Slip</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('salary_slips.generate') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="employee_id" class="form-label">Select Employee</label>
+                        {{ form.employee_id(class="form-select") }}
+                        {% if form.employee_id.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.employee_id.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="month" class="form-label">Month</label>
+                            {{ form.month(class="form-select") }}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="year" class="form-label">Year</label>
+                            {{ form.year(class="form-select") }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-receipt"></i> Generate Salary Slip
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

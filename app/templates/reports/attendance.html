@@ -1,0 +1,143 @@
+<!-- app/templates/reports/attendance.html -->
+{% extends "base.html" %}
+
+{% block title %}Attendance Report - Farm Payroll{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Daily Attendance Report</h2>
+    <button onclick="window.print()" class="btn btn-outline-secondary">
+        <i class="bi bi-printer"></i> Print Report
+    </button>
+</div>
+
+<!-- Filter Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label">Start Date</label>
+                <input type="date" name="start_date" class="form-control" 
+                       value="{{ start_date }}" required>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">End Date</label>
+                <input type="date" name="end_date" class="form-control" 
+                       value="{{ end_date }}" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-filter"></i> Apply
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Attendance Records -->
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">
+            Attendance Records: {{ start_date }} to {{ end_date }}
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Employee</th>
+                        <th>Clock #</th>
+                        <th>Job Type</th>
+                        <th>Clock In</th>
+                        <th>Clock Out</th>
+                        <th class="text-end">Hours</th>
+                        <th class="text-end">Earnings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.work_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ log.employee.name }}</td>
+                        <td>{{ log.employee.clock_number }}</td>
+                        <td>{{ log.job_type.job_name }}</td>
+                        <td>{{ log.clock_in_time.strftime('%H:%M') if log.clock_in_time else '-' }}</td>
+                        <td>{{ log.clock_out_time.strftime('%H:%M') if log.clock_out_time else '-' }}</td>
+                        <td class="text-end">
+                            {% if log.clock_in_time and log.clock_out_time %}
+                                {{ "%.2f"|format(log.calculate_hours_worked()) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-end">R{{ "%.2f"|format(log.daily_total) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            No attendance records found for the selected period
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if logs %}
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="6" class="fw-bold">Total</td>
+                        <td class="text-end fw-bold">
+                            {% set total_hours = namespace(value=0) %}
+                            {% for log in logs %}
+                                {% set total_hours.value = total_hours.value + log.calculate_hours_worked() %}
+                            {% endfor %}
+                            {{ "%.2f"|format(total_hours.value) }}
+                        </td>
+                        <td class="text-end fw-bold">
+                            R{{ "%.2f"|format(logs|sum(attribute='daily_total')) }}
+                        </td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+{% if logs %}
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Total Employees</h6>
+                <h3>{{ logs|map(attribute='employee_id')|unique|list|length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Total Shifts</h6>
+                <h3>{{ logs|length }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6 class="text-muted">Avg. Hours per Shift</h6>
+                <h3>
+                    {% set total_hours = namespace(value=0) %}
+                    {% for log in logs %}
+                        {% set total_hours.value = total_hours.value + log.calculate_hours_worked() %}
+                    {% endfor %}
+                    {{ "%.1f"|format(total_hours.value / logs|length) if logs else "0.0" }}
+                </h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

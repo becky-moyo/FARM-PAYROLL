@@ -1,0 +1,169 @@
+<!-- app/templates/salary_slips/view.html -->
+{% extends "base.html" %}
+
+{% block title %}Salary Slip - Farm Payroll{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Salary Slip - {{ slip.month }}</h2>
+    <div>
+        <a href="{{ url_for('salary_slips.download_pdf',
+                          employee_id=slip.employee.id,
+                          month=slip.start_date.month,
+                          year=slip.start_date.year) }}"
+           class="btn btn-primary">
+            <i class="bi bi-download"></i> Download PDF
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Employee Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Name:</dt>
+                            <dd class="col-sm-8">{{ slip.employee.name }}</dd>
+                            
+                            <dt class="col-sm-4">Clock Number:</dt>
+                            <dd class="col-sm-8">{{ slip.employee.clock_number }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Period:</dt>
+                            <dd class="col-sm-8">
+                                {{ slip.start_date.strftime('%d %b %Y') }} - 
+                                {{ slip.end_date.strftime('%d %b %Y') }}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Days Worked:</dt>
+                            <dd class="col-sm-8">{{ slip.total_days_worked }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Earnings Breakdown</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Job Type</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">Days</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for jt_id, summary in slip.job_type_summary.items() %}
+                            <tr>
+                                <td>{{ summary.name }}</td>
+                                <td class="text-end">{{ "%.2f"|format(summary.quantity) }}</td>
+                                <td class="text-end">{{ summary.days_count }}</td>
+                                <td class="text-end">R{{ "%.2f"|format(summary.total) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="3" class="text-end">Total Earnings:</th>
+                                <th class="text-end">R{{ "%.2f"|format(slip.total_earnings) }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Daily Details</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Job Type</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">Hours</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in slip.logs %}
+                            <tr>
+                                <td>{{ log.work_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ log.job_type.job_name }}</td>
+                                <td class="text-end">{{ "%.2f"|format(log.quantity_complete) }}</td>
+                                <td class="text-end">
+                                    {% if log.clock_in_time %}
+                                        {{ "%.2f"|format(log.calculate_hours_worked()) }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">R{{ "%.2f"|format(log.daily_total) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-navy text-white">
+                <h5 class="mb-0">Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Piece Rate Earnings</small>
+                    <h4>R{{ "%.2f"|format(slip.piece_rate_total) }}</h4>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">Hourly Earnings</small>
+                    <h4>R{{ "%.2f"|format(slip.hourly_total) }}</h4>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">Total Hours Worked</small>
+                    <h4>{{ "%.2f"|format(slip.total_hours) }}</h4>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">Total Quantity</small>
+                    <h4>{{ "%.2f"|format(slip.total_quantity) }}</h4>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-0">
+                    <small class="text-muted">Net Pay</small>
+                    <h3 class="text-sage">R{{ "%.2f"|format(slip.total_earnings) }}</h3>
+                </div>
+            </div>
+            <div class="card-footer bg-white">
+                <a href="{{ url_for('salary_slips.select') }}" class="btn btn-outline-secondary w-100">
+                    Generate Another Slip
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

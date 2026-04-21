@@ -1,0 +1,220 @@
+<!-- app/templates/daily_logs/list.html -->
+{% extends "base.html" %}
+
+{% block title %}Daily Logs - Farm Payroll{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="mb-0">Daily Logs</h2>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('daily_logs.export', **filters) }}" class="btn btn-outline-success">
+            <i class="bi bi-download"></i> Export CSV
+        </a>
+        <a href="{{ url_for('daily_logs.add') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Entry
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Start Date</label>
+                <input type="date" name="start_date" class="form-control" value="{{ filters.start_date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">End Date</label>
+                <input type="date" name="end_date" class="form-control" value="{{ filters.end_date }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Employee</label>
+                <select name="employee_id" class="form-select">
+                    <option value="">All Employees</option>
+                    {% for employee in employees %}
+                    <option value="{{ employee.id }}" {{ 'selected' if filters.employee_id == employee.id }}>
+                        {{ employee.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Job Type</label>
+                <select name="job_type_id" class="form-select">
+                    <option value="">All Job Types</option>
+                    {% for job_type in job_types %}
+                    <option value="{{ job_type.id }}" {{ 'selected' if filters.job_type_id == job_type.id }}>
+                        {{ job_type.job_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-filter"></i> Apply
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bulk Delete -->
+<div class="card mb-4 border-danger-subtle">
+    <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <span class="fw-semibold text-danger"><i class="bi bi-trash me-1"></i>Bulk Delete</span>
+            <small class="text-muted ms-2">
+                Permanently deletes all logs between {{ filters.start_date }} and {{ filters.end_date }}
+            </small>
+        </div>
+        <button type="button" class="btn btn-outline-danger" onclick="showBulkDeleteModal()">
+            <i class="bi bi-trash"></i> Delete All in Date Range
+        </button>
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Employee</th>
+                        <th>Clock #</th>
+                        <th>Job Type</th>
+                        <th>Quantity</th>
+                        <th>Hours</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.work_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ log.employee.name }}</td>
+                        <td>{{ log.employee.clock_number }}</td>
+                        <td>{{ log.job_type.job_name }}</td>
+                        <td>{{ "%.2f"|format(log.quantity_complete) }}</td>
+                        <td>
+                            {% if log.clock_in_time %}
+                                {{ "%.2f"|format(log.calculate_hours_worked()) }}
+                            {% else %}-{% endif %}
+                        </td>
+                        <td class="fw-bold">R{{ "%.2f"|format(log.daily_total) }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('daily_logs.edit', id=log.id) }}"
+                                   class="btn btn-outline-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" title="Delete"
+                                        onclick="showDeleteModal({{ log.id }}, '{{ log.work_date.strftime('%Y-%m-%d') }}', '{{ log.employee.name }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No daily logs found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if logs %}
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="6" class="text-end fw-bold">Total:</td>
+                        <td colspan="2" class="fw-bold">R{{ "%.2f"|format(logs|sum(attribute='daily_total')) }}</td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── Row Delete Modal ── -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Log Entry
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-1">You are about to delete the log entry for:</p>
+                <p class="fw-semibold mb-0" id="deleteLogInfo"></p>
+                <p class="text-danger small mt-3 mb-0">
+                    <i class="bi bi-info-circle me-1"></i>This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <form id="deleteForm" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Yes, Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Bulk Delete Modal ── -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title" id="bulkDeleteModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Bulk Delete Logs
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-2">You are about to permanently delete <strong>all daily logs</strong> between:</p>
+                <div class="alert alert-warning py-2 mb-3">
+                    <i class="bi bi-calendar-range me-1"></i>
+                    <strong>{{ filters.start_date }}</strong> &nbsp;→&nbsp; <strong>{{ filters.end_date }}</strong>
+                </div>
+                <p class="text-danger small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>This action cannot be undone. All matching records will be permanently removed.
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <form method="POST" action="{{ url_for('daily_logs.bulk_delete') }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="start_date" value="{{ filters.start_date }}">
+                    <input type="hidden" name="end_date" value="{{ filters.end_date }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Yes, Delete All
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showDeleteModal(id, date, employeeName) {
+    document.getElementById('deleteLogInfo').textContent = employeeName + ' — ' + date;
+    document.getElementById('deleteForm').action = '/daily-logs/' + id + '/delete';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function showBulkDeleteModal() {
+    new bootstrap.Modal(document.getElementById('bulkDeleteModal')).show();
+}
+</script>
+{% endblock %}

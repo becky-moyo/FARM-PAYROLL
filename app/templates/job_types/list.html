@@ -1,0 +1,110 @@
+<!-- app/templates/job_types/list.html -->
+{% extends "base.html" %}
+
+{% block title %}Job Types - Farm Payroll{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="mb-0">Job Types</h2>
+    <a href="{{ url_for('job_types.add') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Job Type
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Job Name</th>
+                        <th>Pay Rate</th>
+                        <th>Unit Divisor</th>
+                        <th>Rate Per Unit</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job_type in job_types %}
+                    <tr class="{{ 'table-secondary' if not job_type.is_active }}">
+                        <td>{{ job_type.job_name }}</td>
+                        <td>R{{ "%.2f"|format(job_type.pay_rate) }}</td>
+                        <td>{{ job_type.unit_divisor }}</td>
+                        <td>R{{ "%.2f"|format(job_type.rate_per_unit) }}</td>
+                        <td>
+                            {% if job_type.payment_type == 'piece_rate' %}
+                                <span class="badge bg-info">Piece Rate</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Hourly Piece</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if job_type.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('job_types.edit', id=job_type.id) }}"
+                                   class="btn btn-outline-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" title="Delete"
+                                        onclick="showDeleteModal({{ job_type.id }}, '{{ job_type.job_name }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── Delete Confirmation Modal ── -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Job Type
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-1">You are about to delete:</p>
+                <p class="fw-semibold fs-5 mb-3" id="jobTypeName"></p>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    This can only be done if no daily logs are associated with this job type.
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <form id="deleteForm" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Yes, Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showDeleteModal(id, name) {
+    document.getElementById('jobTypeName').textContent = name;
+    document.getElementById('deleteForm').action = '/job-types/' + id + '/delete';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

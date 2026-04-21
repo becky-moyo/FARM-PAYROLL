@@ -1,0 +1,252 @@
+<!-- app/templates/employees/list.html -->
+{% extends "base.html" %}
+
+{% block title %}Employees - Farm Payroll{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="mb-0">Employees</h2>
+    <a href="{{ url_for('employees.add') }}" class="btn btn-primary">
+        <i class="bi bi-person-plus"></i> Add Employee
+    </a>
+</div>
+
+<!-- Search with predictive suggestions -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" id="searchForm" class="row g-3" autocomplete="off">
+            <div class="col-md-10 position-relative">
+                <input type="text" name="search" id="searchInput" class="form-control"
+                       placeholder="Search by name or clock number..."
+                       value="{{ search }}">
+                <ul id="searchSuggestions"
+                    class="list-group position-absolute w-100 shadow-sm"
+                    style="z-index:1000; top:100%; display:none; max-height:220px; overflow-y:auto;">
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Employee List -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Clock Number</th>
+                        <th>Name</th>
+                        <th>Date Started</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for employee in employees.items %}
+                    <tr class="{{ 'table-secondary' if not employee.is_active }}">
+                        <td>{{ employee.clock_number }}</td>
+                        <td>{{ employee.name }}</td>
+                        <td>{{ employee.date_started.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if employee.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ url_for('employees.view', id=employee.id) }}"
+                                   class="btn btn-outline-info" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('employees.edit', id=employee.id) }}"
+                                   class="btn btn-outline-warning" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% if employee.is_active %}
+                                <button type="button" class="btn btn-outline-danger" title="Deactivate"
+                                        onclick="showDeactivateModal({{ employee.id }}, '{{ employee.name }}')">
+                                    <i class="bi bi-person-x"></i>
+                                </button>
+                                {% else %}
+                                <button type="button" class="btn btn-outline-success" title="Activate"
+                                        onclick="showActivateModal({{ employee.id }}, '{{ employee.name }}')">
+                                    <i class="bi bi-person-check"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No employees found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if employees.pages > 1 %}
+    <div class="card-footer bg-white">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                <li class="page-item {{ 'disabled' if not employees.has_prev }}">
+                    <a class="page-link" href="{{ url_for('employees.list', page=employees.prev_num, search=search) if employees.has_prev else '#' }}">
+                        Previous
+                    </a>
+                </li>
+                {% for page_num in employees.iter_pages() %}
+                    {% if page_num %}
+                        <li class="page-item {{ 'active' if page_num == employees.page }}">
+                            <a class="page-link" href="{{ url_for('employees.list', page=page_num, search=search) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {{ 'disabled' if not employees.has_next }}">
+                    <a class="page-link" href="{{ url_for('employees.list', page=employees.next_num, search=search) if employees.has_next else '#' }}">
+                        Next
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ── Activate Confirmation Modal ── -->
+<div class="modal fade" id="activateModal" tabindex="-1" aria-labelledby="activateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white border-0">
+                <h5 class="modal-title" id="activateModalLabel">
+                    <i class="bi bi-person-check-fill me-2"></i>Activate Employee
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-1">You are about to reactivate:</p>
+                <p class="fw-semibold fs-5 mb-3" id="activateEmployeeNameDisplay"></p>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    This employee will appear in active lists and can be selected for new daily logs.
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <form id="activateForm" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-person-check me-1"></i>Yes, Activate
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="deactivateModal" tabindex="-1" aria-labelledby="deactivateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark border-0">
+                <h5 class="modal-title" id="deactivateModalLabel">
+                    <i class="bi bi-person-x-fill me-2"></i>Deactivate Employee
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-1">You are about to deactivate:</p>
+                <p class="fw-semibold fs-5 mb-3" id="employeeNameDisplay"></p>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    This will not delete the employee or their records. They will no longer appear in active lists or be selectable for new daily logs.
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cancel
+                </button>
+                <form id="deactivateForm" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-warning text-dark">
+                        <i class="bi bi-person-x me-1"></i>Yes, Deactivate
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Activate modal ──
+function showActivateModal(id, name) {
+    document.getElementById('activateEmployeeNameDisplay').textContent = name;
+    document.getElementById('activateForm').action = '/employees/' + id + '/activate';
+    new bootstrap.Modal(document.getElementById('activateModal')).show();
+}
+
+// ── Deactivate modal ──
+function showDeactivateModal(id, name) {
+    document.getElementById('employeeNameDisplay').textContent = name;
+    document.getElementById('deactivateForm').action = '/employees/' + id + '/delete';
+    new bootstrap.Modal(document.getElementById('deactivateModal')).show();
+}
+
+// ── Predictive search ──
+const searchInput      = document.getElementById('searchInput');
+const suggestionsList  = document.getElementById('searchSuggestions');
+
+searchInput.addEventListener('input', function () {
+    const query = this.value.trim();
+    if (query.length < 1) { suggestionsList.style.display = 'none'; return; }
+
+    fetch('/employees/search-suggestions?q=' + encodeURIComponent(query))
+        .then(r => r.json())
+        .then(data => {
+            suggestionsList.innerHTML = '';
+            if (!data.length) { suggestionsList.style.display = 'none'; return; }
+
+            data.forEach(function (item) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item list-group-item-action py-2 px-3';
+                li.style.cursor = 'pointer';
+                li.innerHTML =
+                    '<span class="fw-semibold">' + item.name + '</span>' +
+                    '<small class="text-muted ms-2">#' + item.clock_number + '</small>' +
+                    (item.is_active
+                        ? '<span class="badge bg-success ms-2" style="font-size:0.7rem">Active</span>'
+                        : '<span class="badge bg-secondary ms-2" style="font-size:0.7rem">Inactive</span>');
+                li.addEventListener('click', function () {
+                    searchInput.value = item.name;
+                    suggestionsList.style.display = 'none';
+                    document.getElementById('searchForm').submit();
+                });
+                suggestionsList.appendChild(li);
+            });
+            suggestionsList.style.display = 'block';
+        })
+        .catch(() => { suggestionsList.style.display = 'none'; });
+});
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', function (e) {
+    if (!searchInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+        suggestionsList.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

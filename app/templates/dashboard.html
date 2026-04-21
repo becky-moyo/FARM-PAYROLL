@@ -1,0 +1,128 @@
+<!-- app/templates/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Farm Payroll{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('daily_logs.add') }}" class="btn btn-primary me-2">
+            <i class="bi bi-plus-circle"></i> New Daily Log
+        </a>
+        <a href="{{ url_for('employees.add') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-person-plus"></i> Add Employee
+        </a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Active Employees</h6>
+                        <h2 class="mb-0">{{ active_employees }}</h2>
+                    </div>
+                    <div class="stat-icon bg-sage-light">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Today's Earnings</h6>
+                        <h2 class="mb-0">R{{ "%.2f"|format(today_earnings) }}</h2>
+                    </div>
+                    <div class="stat-icon bg-sage-light">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Month Payroll</h6>
+                        <h2 class="mb-0">R{{ "%.2f"|format(month_earnings) }}</h2>
+                    </div>
+                    <div class="stat-icon bg-sage-light">
+                        <i class="bi bi-calendar-month"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-2">Days Worked</h6>
+                        <h2 class="mb-0">{{ days_worked }}</h2>
+                    </div>
+                    <div class="stat-icon bg-sage-light">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Daily Logs -->
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Recent Daily Logs</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Employee</th>
+                        <th>Job Type</th>
+                        <th>Quantity</th>
+                        <th>Amount</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in recent_logs %}
+                    <tr>
+                        <td>{{ log.work_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ log.employee.name }}</td>
+                        <td>{{ log.job_type.job_name }}</td>
+                        <td>{{ "%.2f"|format(log.quantity_complete) }}</td>
+                        <td>R{{ "%.2f"|format(log.daily_total) }}</td>
+                        <td>{{ log.notes[:30] + '...' if log.notes and log.notes|length > 30 else log.notes or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">No daily logs yet</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if recent_logs %}
+    <div class="card-footer bg-white text-end">
+        <a href="{{ url_for('daily_logs.list') }}" class="btn btn-sm btn-outline-secondary">
+            View All Logs <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

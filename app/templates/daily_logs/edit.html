@@ -1,0 +1,226 @@
+<!-- app/templates/daily_logs/edit.html -->
+{% extends "base.html" %}
+
+{% block title %}Edit Daily Log - Farm Payroll{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-white d-flex align-items-center justify-content-between">
+                <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Edit Daily Log Entry</h5>
+                <a href="{{ url_for('daily_logs.list') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="dailyLogForm" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="work_date" class="form-label">Date <span class="text-danger">*</span></label>
+                            {{ form.work_date(class="form-control", type="date") }}
+                            {% if form.work_date.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.work_date.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="employee_id" class="form-label">Employee <span class="text-danger">*</span></label>
+                            {{ form.employee_id(class="form-select") }}
+                            {% if form.employee_id.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.employee_id.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="job_type_id" class="form-label">Job Type <span class="text-danger">*</span></label>
+                        {{ form.job_type_id(class="form-select", id="job_type_id") }}
+                        {% if form.job_type_id.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.job_type_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Clock Time Fields (hourly only) -->
+                    <div id="clockTimeFields" style="display:none;">
+                        <div class="alert alert-info py-2 px-3 mb-3 small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Enter clock in and clock out times. Hours worked will be calculated automatically.
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label for="clock_in_time" class="form-label">Clock In Time <span class="text-danger">*</span></label>
+                                {{ form.clock_in_time(class="form-control", type="time", id="clock_in_time") }}
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label for="clock_out_time" class="form-label">Clock Out Time <span class="text-danger">*</span></label>
+                                {{ form.clock_out_time(class="form-control", type="time", id="clock_out_time") }}
+                                {% if form.clock_out_time.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.clock_out_time.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div id="hoursDisplay" class="mb-3" style="display:none;">
+                            <small class="text-success fw-semibold">
+                                <i class="bi bi-clock-fill me-1"></i>
+                                Hours worked: <span id="hoursWorked">0.00</span>
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Quantity field -->
+                    <div id="quantityField" class="mb-3">
+                        <label for="quantity_complete" class="form-label" id="quantityLabel">
+                            Quantity Complete <span class="text-danger">*</span>
+                        </label>
+                        {{ form.quantity_complete(class="form-control", id="quantity_complete") }}
+                        <small class="text-muted" id="quantityHint">Enter the number of units/pieces completed.</small>
+                        {% if form.quantity_complete.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.quantity_complete.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Daily Total Preview -->
+                    <div class="mb-3">
+                        <label class="form-label">Estimated Daily Total</label>
+                        <div class="input-group">
+                            <span class="input-group-text fw-bold">R</span>
+                            <input type="text" id="dailyTotalPreview" class="form-control bg-light fw-bold text-success fs-5"
+                                   readonly value="{{ '%.2f'|format(daily_log.daily_total) }}">
+                        </div>
+                        <small class="text-muted" id="calcBreakdown"></small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes <span class="text-muted">(Optional)</span></label>
+                        {{ form.notes(class="form-control", rows="2") }}
+                    </div>
+
+                    <div class="d-flex justify-content-between flex-wrap gap-2">
+                        <a href="{{ url_for('daily_logs.list') }}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Update Entry
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const JOB_TYPES = {{ job_types_data | tojson | safe }};
+
+const elJobType    = document.getElementById('job_type_id');
+const elClockWrap  = document.getElementById('clockTimeFields');
+const elQtyInput   = document.getElementById('quantity_complete');
+const elQtyLabel   = document.getElementById('quantityLabel');
+const elQtyHint    = document.getElementById('quantityHint');
+const elClockIn    = document.getElementById('clock_in_time');
+const elClockOut   = document.getElementById('clock_out_time');
+const elHoursWrap  = document.getElementById('hoursDisplay');
+const elHoursVal   = document.getElementById('hoursWorked');
+const elPreview    = document.getElementById('dailyTotalPreview');
+const elBreakdown  = document.getElementById('calcBreakdown');
+
+function getSelectedJobType() {
+    const id = parseInt(elJobType.value);
+    return JOB_TYPES.find(j => j.id === id) || null;
+}
+
+function calcHours(inVal, outVal) {
+    if (!inVal || !outVal) return 0;
+    const [ih, im] = inVal.split(':').map(Number);
+    const [oh, om] = outVal.split(':').map(Number);
+    let mins = (oh * 60 + om) - (ih * 60 + im);
+    if (mins <= 0) mins += 24 * 60; // overnight shift
+    return mins / 60;
+}
+
+function updateFields() {
+    const jt = getSelectedJobType();
+    if (!jt) return;
+
+    const isHourly = jt.payment_type === 'hourly_piece';
+
+    elClockWrap.style.display = isHourly ? 'block' : 'none';
+
+    if (isHourly) {
+        elQtyLabel.innerHTML = 'Hours Worked <span class="text-danger">*</span>';
+        elQtyHint.textContent = 'Calculated automatically from clock in/out times.';
+        elQtyInput.readOnly = true;
+        elQtyInput.classList.add('bg-light');
+    } else {
+        elQtyLabel.innerHTML = 'Quantity Complete <span class="text-danger">*</span>';
+        elQtyHint.textContent = 'Enter the number of units/pieces completed.';
+        elQtyInput.readOnly = false;
+        elQtyInput.classList.remove('bg-light');
+    }
+
+    updatePreview();
+}
+
+function updatePreview() {
+    const jt = getSelectedJobType();
+    if (!jt) { elPreview.value = '0.00'; elBreakdown.textContent = ''; return; }
+
+    const isHourly = jt.payment_type === 'hourly_piece';
+    let quantity = 0;
+
+    if (isHourly) {
+        const hours = calcHours(elClockIn.value, elClockOut.value);
+        quantity = hours;
+        elQtyInput.value = hours > 0 ? hours.toFixed(2) : elQtyInput.value;
+
+        if (hours > 0) {
+            elHoursWrap.style.display = 'block';
+            elHoursVal.textContent = hours.toFixed(2);
+        } else {
+            // Show stored hours if clock times haven't been changed yet
+            const stored = parseFloat(elQtyInput.value) || 0;
+            if (stored > 0) {
+                elHoursWrap.style.display = 'block';
+                elHoursVal.textContent = stored.toFixed(2);
+                quantity = stored;
+            } else {
+                elHoursWrap.style.display = 'none';
+            }
+        }
+    } else {
+        quantity = parseFloat(elQtyInput.value) || 0;
+    }
+
+    if (quantity <= 0 || !jt.unit_divisor) {
+        elPreview.value = '0.00';
+        elBreakdown.textContent = '';
+        return;
+    }
+
+    const total = (quantity / jt.unit_divisor) * jt.pay_rate;
+    elPreview.value = total.toFixed(2);
+    elBreakdown.textContent =
+        `(${quantity.toFixed(2)} ÷ ${jt.unit_divisor}) × R${jt.pay_rate.toFixed(2)} = R${total.toFixed(2)}`;
+}
+
+// Event listeners
+elJobType.addEventListener('change', updateFields);
+elClockIn.addEventListener('change', updatePreview);
+elClockOut.addEventListener('change', updatePreview);
+elQtyInput.addEventListener('input', updatePreview);
+
+// Init on load — restore correct state for existing record
+document.addEventListener('DOMContentLoaded', updateFields);
+</script>
+{% endblock %}

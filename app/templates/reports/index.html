@@ -1,0 +1,95 @@
+<!-- app/templates/reports/index.html -->
+{% extends "base.html" %}
+
+{% block title %}Reports - Farm Payroll{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Reports Dashboard</h2>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="stat-icon bg-sage-light me-3">
+                        <i class="bi bi-cash-stack fs-3"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Monthly Payroll Summary</h5>
+                </div>
+                <p class="card-text text-muted">
+                    View total earnings and days worked for all employees within a selected date range.
+                </p>
+                <a href="{{ url_for('reports.monthly_payroll') }}" class="btn btn-outline-primary">
+                    Generate Report <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="stat-icon bg-sage-light me-3">
+                        <i class="bi bi-graph-up fs-3"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Employee Productivity</h5>
+                </div>
+                <p class="card-text text-muted">
+                    Analyze employee productivity with quantity completed and earnings per job type.
+                </p>
+                <a href="{{ url_for('reports.employee_productivity') }}" class="btn btn-outline-primary">
+                    Generate Report <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="stat-icon bg-sage-light me-3">
+                        <i class="bi bi-clock-history fs-3"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Daily Attendance</h5>
+                </div>
+                <p class="card-text text-muted">
+                    View daily attendance records with clock in and out times for hourly workers.
+                </p>
+                <a href="{{ url_for('reports.attendance') }}" class="btn btn-outline-primary">
+                    Generate Report <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Quick Export Options</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Export Current Month Payroll</h6>
+                <p class="text-muted small">Download complete payroll data for the current month.</p>
+                <a href="{{ url_for('reports.export_report', report_type='monthly_payroll', 
+                                   start_date=current_month_start, end_date=current_month_end) }}" 
+                   class="btn btn-success">
+                    <i class="bi bi-file-excel"></i> Export to Excel
+                </a>
+            </div>
+            <div class="col-md-6">
+                <h6>Export All Productivity Data</h6>
+                <p class="text-muted small">Download complete productivity data for all employees.</p>
+                <a href="{{ url_for('reports.export_report', report_type='productivity',
+                                   start_date='2024-01-01', end_date=current_month_end) }}" 
+                   class="btn btn-success">
+                    <i class="bi bi-file-excel"></i> Export to Excel
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

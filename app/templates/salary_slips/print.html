@@ -1,0 +1,160 @@
+<!-- app/templates/salary_slips/print.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salary Slip - {{ slip.employee.name }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0.5in;
+            color: #2C3E50;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #4A5568;
+            padding-bottom: 20px;
+        }
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2C3E50;
+            margin-bottom: 5px;
+        }
+        .slip-title {
+            font-size: 20px;
+            color: #8B9D83;
+        }
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            flex: 1;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #4A5568;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .info-value {
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th {
+            background-color: #4A5568;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        tr:nth-child(even) {
+            background-color: #F8F9FA;
+        }
+        .total-section {
+            text-align: right;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #F8F9FA;
+            border-radius: 5px;
+        }
+        .total-label {
+            font-size: 14px;
+            color: #4A5568;
+        }
+        .total-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2C3E50;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #A0AEC0;
+            font-size: 12px;
+            border-top: 1px solid #E2E8F0;
+            padding-top: 20px;
+        }
+        @media print {
+            body { margin: 0.5in; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+        <button onclick="window.print()" style="padding: 10px 20px; background: #2C3E50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Print Salary Slip
+        </button>
+    </div>
+    
+    <div class="header">
+        <div class="company-name">Farm Payroll Management</div>
+        <div class="slip-title">Monthly Salary Slip</div>
+    </div>
+    
+    <div class="info-section">
+        <div class="info-box">
+            <div class="info-label">Employee Name</div>
+            <div class="info-value">{{ slip.employee.name }}</div>
+            
+            <div class="info-label">Clock Number</div>
+            <div class="info-value">{{ slip.employee.clock_number }}</div>
+        </div>
+        <div class="info-box" style="text-align: right;">
+            <div class="info-label">Pay Period</div>
+            <div class="info-value">
+                {{ slip.start_date.strftime('%d %B %Y') }} - {{ slip.end_date.strftime('%d %B %Y') }}
+            </div>
+            
+            <div class="info-label">Days Worked</div>
+            <div class="info-value">{{ slip.total_days_worked }} days</div>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Job Type</th>
+                <th style="text-align: right;">Quantity</th>
+                <th style="text-align: right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in slip.logs %}
+            <tr>
+                <td>{{ log.work_date.strftime('%d/%m/%Y') }}</td>
+                <td>{{ log.job_type.job_name }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(log.quantity_complete) }}</td>
+                <td style="text-align: right;">R{{ "%.2f"|format(log.daily_total) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="total-section">
+        <div class="total-label">Total Earnings for {{ slip.month }}</div>
+        <div class="total-value">R{{ "%.2f"|format(slip.total_earnings) }}</div>
+    </div>
+    
+    <div class="footer">
+        <p>This is a computer-generated salary slip. No signature required.</p>
+        <p>Generated on {{ now().strftime('%d %B %Y at %H:%M') }}</p>
+    </div>
+</body>
+</html>

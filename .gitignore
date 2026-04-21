@@ -1,0 +1,156 @@
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+wheels/
+
+# ============================================================
+# Virtual Environments
+# ============================================================
+venv/
+env/
+ENV/
+.venv/
+.env/
+virtualenv/
+
+# ============================================================
+# Environment Variables
+# ============================================================
+.env
+.env.*
+!.env.example
+
+# ============================================================
+# Flask / Instance Folder
+# ============================================================
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================================
+# Flask-Migrate (keep migrations folder but ignore cache)
+# ============================================================
+migrations/__pycache__/
+
+# ============================================================
+# Distribution / Packaging
+# ============================================================
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+.Python
+
+# ============================================================
+# Testing
+# ============================================================
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+htmlcov/
+.pytest_cache/
+.hypothesis/
+
+# ============================================================
+# IDEs and Editors
+# ============================================================
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm / JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# ============================================================
+# Operating System
+# ============================================================
+
+# Windows
+Thumbs.db
+Thumbs.db:encdata
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+logs/
+log/
+
+# ============================================================
+# Uploads / User Generated Content
+# ============================================================
+app/static/uploads/
+
+# ============================================================
+# Jupyter Notebooks
+# ============================================================
+.ipynb_checkpoints/
+*.ipynb
+
+# ============================================================
+# Miscellaneous
+# ============================================================
+*.bak
+*.tmp
+*.temp
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
